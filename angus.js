@@ -86,7 +86,7 @@ window.ChatbotSpec = {
       "acceptsParameters": false,
       "sendsChatMessage": true,
       "exec": function(data) {
-        data.who = data.parameters[0];
+        data.who = data.parameters[0].replace("@", "");
         data.reason = (data.parameters[1] || "No reason provided.");
         console.log("Attempting to kick " + data.who);
         console.log(data.parameters);
