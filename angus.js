@@ -55,6 +55,7 @@ window.ChatbotSpec = {
       ],
       "exec": function(data) {
         sendMessage("\"" + ChatbotSpec.name + "\" Version " + ChatbotSpec.version + " by " + ChatbotSpec.author);
+        sendMessage("Find \"" + ChatbotSpec.name + "\" on GitHub: https://github.com/Gigabyte-Giant/Angus");
       },
       "desc": "Displays information about the bot."
     },
