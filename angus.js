@@ -12,6 +12,7 @@ window.ChatbotSpec = {
   label: "{Angus} ",
   author: "GigabyteGiant",
   commandInitializer: "!",
+  admins: [ "GigabyteGiant", "Lokio27" ],
   specialUsers: {
     "Sponge": {
       "exec": function(data) {
@@ -80,6 +81,26 @@ window.ChatbotSpec = {
         }
       },
       "desc": "Displays help about a specific command"
+    },
+    "kick": {
+      "acceptsParameters": false,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0];
+        data.reason = (data.parameters[1] || "No reason provided.");
+        console.log("Attempting to kick " + data.who);
+        console.log(data.parameters);
+        if (ChatbotSpec.admins.indexOf(data.name) !== -1) {
+          if (ChatbotSpec.admins.indexOf(data.who) === -1) {
+            Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+          } else {
+            sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "That's an admin-only command @" + data.name);
+        }
+      },
+      "desc": "Kicks desired user from chat"
     }
   }
 };
