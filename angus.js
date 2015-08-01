@@ -1,5 +1,5 @@
 window.candyChatroom = (function() {
-  return (window.location.href.replace("https://www.livecoding.tv/chat/", "") || window.location.href.replace("https://www.livecoding.tv/", "")).replace("/", "@chat.livecoding.tv/");
+  return Candy.Core.getOptions().autojoin[0].toLowerCase();
 })();
 
 window.sendMessage = function(messageData) {
