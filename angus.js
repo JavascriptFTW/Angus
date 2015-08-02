@@ -208,14 +208,18 @@ var chatbot = new Chatbot(ChatbotSpec);
 
 /* Upon presence update */
 $(Candy).on("candy:core.presence.room", function(evt, args) {
-  var who = args.user.data.nick;
-  switch (args.action) {
-    case "join":
-      chatbot.onViewerJoin({ name: who });
-      break;
-    case "leave":
-      chatbot.onViewerLeave({ name: who });
-      break;
+  try {
+    var who = args.user.data.nick;
+    switch (args.action) {
+      case "join":
+        chatbot.onViewerJoin({ name: who });
+        break;
+      case "leave":
+        chatbot.onViewerLeave({ name: who });
+        break;
+    }
+  } catch (err) {
+    sendMessage(ChatbotSpec.label + "Oh No! Something 'sploded! :fear:");
   }
 });
 
