@@ -48,7 +48,8 @@ window.ChatbotSpec = {
             "admin": false,
             "moderator": false,
             "vip": false
-          }
+          },
+          "online": true
         };
           
         localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
@@ -72,6 +73,7 @@ window.ChatbotSpec = {
     "help": {
       "sendsChatMessage": true,
       "exec": function(data) {
+        var toSend = ".\n";
         if (data.parameters) {
           var cmd = data.parameters[0].replace(ChatbotSpec.commandInitializer, "");
           
@@ -81,12 +83,13 @@ window.ChatbotSpec = {
             sendMessage(ChatbotSpec.label + ChatbotSpec.commandInitializer + cmd + ": " + (ChatbotSpec.commands[cmd].desc || "No information provided."));
           }
         } else {
-          sendMessage(ChatbotSpec.label + "@" + data.name + " Here is a list of the commands:");
+          toSend += ChatbotSpec.label + "@" + data.name + " Here is a list of the commands:\n";
           for (var i in ChatbotSpec.commands) {
-            sendMessage(ChatbotSpec.label + ChatbotSpec.commandInitializer + i);
+            toSend += ChatbotSpec.commandInitializer + i + "\n";
           }
-          sendMessage(ChatbotSpec.label + "Type \"" + ChatbotSpec.commandInitializer + "help <command>\" for more information about a specific command.");
+          toSend += "Type \"" + ChatbotSpec.commandInitializer + "help <command>\" for more information about a specific command.";
         }
+        sendMessage(toSend);
       },
       "desc": "Displays help about a specific command"
     },
@@ -106,7 +109,11 @@ window.ChatbotSpec = {
           if (!ChatbotSpec.viewers[data.who].permissions.admin) {
             Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
           } else {
-            sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
+            if (ChatbotSpec.viewers[data.name].permissions.owner) {
+              Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+            } else {
+              sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
+            }
           }
         } else {
           if (onlineUsers.hasOwnProperty(candyChatroom + "/" + data.who)) {
@@ -121,6 +128,7 @@ window.ChatbotSpec = {
     "admins": {
       "sendsChatMessage": true,
       "exec": function(data) {
+        var toSend = ".\n";
         var val = (data.parameters === undefined ? undefined : data.parameters[0]);
         var roster = Candy.Core.getRoom(candyChatroom).roster.items;
         var online = [];
@@ -130,21 +138,22 @@ window.ChatbotSpec = {
         }
         
         if (val === undefined) {
-          sendMessage("Online Chat Admins:");
+          toSend += "Online Chat Admins:\n";
           for (var i in ChatbotSpec.viewers) {
             if (online.indexOf(i) !== -1 && ChatbotSpec.viewers[i].permissions.admin) {
-              sendMessage("@" + i);
+              toSend += "@" + i + "\n";
             }
           }
-          sendMessage("Type \"" + ChatbotSpec.commandInitializer + "admins all \" to see a list of all admins.");
+          toSend += "Type \"" + ChatbotSpec.commandInitializer + "admins all \" to see a list of all admins.";
         } else if (val === "all") {
-          sendMessage("My Chat Admins:");
+          toSend += "My Chat Admins:\n";
           for (var i in ChatbotSpec.viewers) {
             if (ChatbotSpec.viewers[i].permissions.admin) {
-              sendMessage("[" + (online.indexOf(i) === -1 ? "Offline" : "Online") + "] @" + i);
+              toSend += ("[" + (online.indexOf(i) === -1 ? "Offline" : "Online") + "] @" + i + "\n");
             }
           }
         }
+        sendMessage(toSend);
       },
       "desc": "Lists all the admins for this chat."
     },
@@ -206,13 +215,16 @@ window.Chatbot = function(spec) {
 };
 
 Chatbot.prototype.onViewerJoin = function(evtInfo) {
-  if (this.spec.events.viewerJoin === undefined) {
-    return (function(data) {
-      console.log(data.name + " joined!");
-    })(evtInfo);
-  } else {
-    return this.spec.events.viewerJoin(evtInfo);
+  if (!ChatbotSpec.viewers[evtInfo.name].online) {
+    if (this.spec.events.viewerJoin === undefined) {
+      return (function(data) {
+        console.log(data.name + " joined!");
+      })(evtInfo);
+    } else {
+      return this.spec.events.viewerJoin(evtInfo);
+    }
   }
+  ChatbotSpec.viewers[evtInfo.name].online = true;
 };
 Chatbot.prototype.onViewerLeave = function(evtInfo) {
   if (this.spec.events.viewerLeave === undefined) {
@@ -222,6 +234,7 @@ Chatbot.prototype.onViewerLeave = function(evtInfo) {
   } else {
     return this.spec.events.viewerLeave(evtInfo);
   }
+  ChatbotSpec.viewers[evtInfo.name].online = false;
 };
 Chatbot.prototype.looksLikeCommand = function(msgData) {
   return msgData.message[0] === ChatbotSpec.commandInitializer;

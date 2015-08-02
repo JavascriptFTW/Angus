@@ -6,7 +6,8 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
-    "greeting": "I have arrived."
+    "greeting": "I have arrived.",
+    "online": false
   },
   "Lokio27": {
     "permissions": {
@@ -16,7 +17,8 @@ var viewerPerms = {
       "vip": true
     },
     "greeting": "<Sp00k>",
-    "farewell": "</Sp00k>"
+    "farewell": "</Sp00k>",
+    "online": false
   },
   "drmjg": {
     "permissions": {
@@ -26,7 +28,8 @@ var viewerPerms = {
       "vip": true
     },
     "greeting": "An admin is upon us!",
-    "farewell": "DUN BAN ME {username}!"
+    "farewell": "DUN BAN ME {username}!",
+    "online": false
   },
   "kristian": {
     "permissions": {
@@ -35,7 +38,8 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
-    "greeting": "Get back to work {username} :D"
+    "greeting": "Get back to work {username} :D",
+    "online": false
   }
 };
 
