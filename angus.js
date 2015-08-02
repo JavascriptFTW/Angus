@@ -12,7 +12,9 @@ window.ChatbotSpec = {
   label: "{Angus} ",
   author: "GigabyteGiant",
   commandInitializer: "!",
-  admins: [ "GigabyteGiant", "Lokio27" ],
+  admins: [ "GigabyteGiant", "Lokio27", "drmjg" ],
+  vips: [  "GigabyteGiant", "Sponge", "Dalendrion", "Noble_Mushtak", "JPG2000" ],
+  vipMode: false,
   specialUsers: {
     "Sponge": {
       "exec": function(data) {
@@ -32,6 +34,11 @@ window.ChatbotSpec = {
     "Retnuh": {
       "exec": function(data) {
         sendMessage(ChatbotSpec.label + "Alizee doe; right @{username}?".replace("{username}", data.name));
+      }
+    },
+    "drmjg": {
+      "exec": function(data) {
+        sendMessage(ChatbotSpec.label + "An admin is upon us! ;D");
       }
     }
   },
@@ -83,24 +90,39 @@ window.ChatbotSpec = {
       "desc": "Displays help about a specific command"
     },
     "kick": {
+      "requiresPermission": true,
       "acceptsParameters": false,
       "sendsChatMessage": true,
       "exec": function(data) {
         data.who = data.parameters[0].replace("@", "");
         data.reason = (data.parameters[1] || "No reason provided.");
-        console.log("Attempting to kick " + data.who);
-        console.log(data.parameters);
-        if (ChatbotSpec.admins.indexOf(data.name) !== -1) {
-          if (ChatbotSpec.admins.indexOf(data.who) === -1) {
-            Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
-          } else {
-            sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
-          }
+        
+        if (ChatbotSpec.admins.indexOf(data.who) === -1) {
+          Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
         } else {
-          sendMessage(ChatbotSpec.label + "That's an admin-only command @" + data.name);
+          sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
         }
       },
       "desc": "Kicks desired user from chat"
+    },
+    "viptoggle": {
+      "requiresPermission": true,
+      "acceptsParameters": false,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        ChatbotSpec.vipMode = !ChatbotSpec.vipMode;
+        sendMessage(ChatbotSpec.label + "VIP-Only-Mode is now " + (ChatbotSpec.vipMode === true ? "enabled" : "disabled") + ".");
+      }
+    },
+    "admins": {
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        sendMessage("Here's a list of my chat admins:");
+        for (var i = 0; i < ChatbotSpec.admins.length; i++) {
+          sendMessage(ChatbotSpec.admins[i]);
+        }
+      },
+      "desc": "Lists all the admins for this chat."
     }
   }
 };
@@ -161,7 +183,15 @@ Chatbot.prototype.onCommand = function(msgData) {
           }
         } 
       } else {
-        ChatbotSpec.commands[command].exec(msgData);
+        if (ChatbotSpec.commands[command].requiresPermission) {
+          if (ChatbotSpec.admins.indexOf(msgData.name) !== -1) {
+            ChatbotSpec.commands[command].exec(msgData);
+          } else {
+            sendMessage(ChatbotSpec.label + "That's an admin-only command @" + msgData.name);
+          }
+        } else {
+          ChatbotSpec.commands[command].exec(msgData);
+        }
       }
     }
   }
@@ -185,11 +215,18 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
 $(Candy).on('candy:view.message.before-show', function(evt, args) {
   console.log(evt);
   console.log(args);
+  
   if (chatbot.looksLikeCommand({name: args.name, message: args.message})) {
     chatbot.onCommand({name: args.name, message: args.message});
   }
   
-  if (args.message.toLowerCase().indexOf("bob the bot") !== -1) {
+  if (ChatbotSpec.vipMode) {
+    if (ChatbotSpec.vips.indexOf(args.name) === -1) {
+      args.message = "-";
+    }
+  }
+  var bobCheckMsg = args.message.toLowerCase();
+  if (bobCheckMsg.indexOf("bob the bot") !== -1) {
     ChatbotSpec.commands.kick.exec({ parameters: [ args.name, "We don't talk about Bob the bot." ], name: "GigabyteGiant" });
   }
 });
