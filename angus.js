@@ -12,7 +12,7 @@ window.ChatbotSpec = {
   label: "{Angus} ",
   author: "GigabyteGiant",
   commandInitializer: "!",
-  admins: [ "GigabyteGiant", "Lokio27", "drmjg" ],
+  admins: [ "GigabyteGiant", "Lokio27", "drmjg", "Sponge" ],
   vips: [  "GigabyteGiant", "Sponge", "Dalendrion", "Noble_Mushtak", "JPG2000" ],
   vipMode: false,
   specialUsers: {
@@ -117,9 +117,16 @@ window.ChatbotSpec = {
     "admins": {
       "sendsChatMessage": true,
       "exec": function(data) {
+        var roster = Candy.Core.getRoom(candyChatroom).roster.items;
+        var online = [];
         sendMessage("Here's a list of my chat admins:");
+        
+        for (var user in roster) {
+          online.push(roster[user].data.nick);
+        }
+        
         for (var i = 0; i < ChatbotSpec.admins.length; i++) {
-          sendMessage(ChatbotSpec.admins[i]);
+          sendMessage(ChatbotSpec.admins[i] + " [" + (online.indexOf(ChatbotSpec.admins[i]) === -1 ? "Offline" : "Online") + "]");
         }
       },
       "desc": "Lists all the admins for this chat."
