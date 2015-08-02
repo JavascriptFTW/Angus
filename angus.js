@@ -149,8 +149,7 @@ window.ChatbotSpec = {
           toSend += "My Chat Admins:\n";
           for (var i in ChatbotSpec.viewers) {
             if (ChatbotSpec.viewers[i].permissions.admin) {
-              console.log("Is " + i + " online? " + ChatbotSpec.viewers[i].online);
-              toSend += ("[" + (ChatbotSpec.viewers[i].online === true ? "Online" : "Offline") + "] @" + i + "\n");
+              toSend += ("[" + (online.indexOf(i) !== -1 ? "Online" : "Offline") + "] @" + i + "\n");
             }
           }
         }
