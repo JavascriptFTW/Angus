@@ -12,51 +12,53 @@ window.ChatbotSpec = {
   label: "{Angus} ",
   author: "GigabyteGiant",
   commandInitializer: "!",
-  admins: [ "GigabyteGiant", "Lokio27", "drmjg", "Sponge" ],
-  vips: [  "GigabyteGiant", "Sponge", "Dalendrion", "Noble_Mushtak", "JPG2000" ],
-  vipMode: false,
-  specialUsers: {
-    "Sponge": {
-      "exec": function(data) {
-        sendMessage(ChatbotSpec.label + "@{username} *squish*".replace("{username}", data.name));
-      }
-    },
-    "JPG2000": {
-      "exec": function(data) {
-        sendMessage(ChatbotSpec.label + "@{username} DOWN WITH BOB THE BOT!".replace("{username}", data.name));
-      }
-    },
-    "Lokio27": {
-      "exec": function(data) {
-        sendMessage(ChatbotSpec.label + "@{username} YOU HAX0R".replace("{username}", data.name));
-      }
-    },
-    "Retnuh": {
-      "exec": function(data) {
-        sendMessage(ChatbotSpec.label + "Alizee doe; right @{username}?".replace("{username}", data.name));
-      }
-    },
-    "drmjg": {
-      "exec": function(data) {
-        sendMessage(ChatbotSpec.label + "An admin is upon us! ;D");
-      }
+  viewers: (JSON.parse(localStorage.getItem("viewers") || {
+    "GigabyteGiant": {
+      "permissions": {
+        "owner": true,
+        "admin": true,
+        "moderator": true,
+        "vip": true
+      },
+      "greeting": "I have arrived."
     }
-  },
+  })),
   events: {
     "viewerLeave": function(data) {
+      if (ChatbotSpec.viewers.hasOwnProperty(data.name)) {
+        if (ChatbotSpec.viewers[data.name].hasOwnProperty("farewell")) {
+          var parsedFarewell = ChatbotSpec.viewers[data.name].farewell.replace("{username}", data.name);
+          sendMessage(ChatbotSpec.label + parsedFarewell);
+          return;
+        }
+      }
       sendMessage(ChatbotSpec.label + "Thanks for stopping by @" + data.name);
     },
     "viewerJoin": function(data) {
-      sendMessage(ChatbotSpec.label + "Welcome to the channel @" + data.name);
-      
-      if (ChatbotSpec.specialUsers.hasOwnProperty(data.name)) {
-        ChatbotSpec.specialUsers[data.name].exec({name: data.name});
+      if (ChatbotSpec.viewers.hasOwnProperty(data.name)) {
+        if (ChatbotSpec.viewers[data.name].hasOwnProperty("greeting")) {
+          var parsedGreeting = ChatbotSpec.viewers[data.name].greeting.replace("{username}", data.name);
+          sendMessage(ChatbotSpec.label + parsedGreeting);
+          return;
+        }
+      } else {
+        ChatbotSpec.viewers[data.name] = {
+          "permissions": {
+            "owner": false,
+            "admin": false,
+            "moderator": false,
+            "vip": false
+          }
+        };
+          
+        localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+        ChatbotSpec.viewers = JSON.parse(localStorage.getItem("viewers"));
       }
+      sendMessage(ChatbotSpec.label + "Welcome to the channel @" + data.name);
     }
   },
   commands: {
     "bot": {
-      "acceptsParameters": false,
       "sendsChatMessage": true,
       "messages": [
         "Hello, {sender}!"
@@ -68,7 +70,6 @@ window.ChatbotSpec = {
       "desc": "Displays information about the bot."
     },
     "help": {
-      "acceptsParameters": true,
       "sendsChatMessage": true,
       "exec": function(data) {
         if (data.parameters) {
@@ -91,42 +92,56 @@ window.ChatbotSpec = {
     },
     "kick": {
       "requiresPermission": true,
-      "acceptsParameters": false,
       "sendsChatMessage": true,
       "exec": function(data) {
+        var onlineUsers = Candy.Core.getRoom(candyChatroom).roster.getAll();
         data.who = data.parameters[0].replace("@", "");
-        data.reason = (data.parameters[1] || "No reason provided.");
+        data.parameters.shift();
+        console.log(data.parameters);
+        data.reason = (data.parameters.join(" ") || "No reason provided.");
         
-        if (ChatbotSpec.admins.indexOf(data.who) === -1) {
-          Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+        if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
+          if (!ChatbotSpec.viewers[data.who].admin) {
+            Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+          } else {
+            sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
+          }
         } else {
-          sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
+          if (onlineUsers.hasOwnProperty(candyChatroom + "/" + data.who)) {
+            Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+          } else {
+            sendMessage(ChatbotSpec.label + "I don't know who @" + data.who + " is! :'(");
+          }
         }
       },
       "desc": "Kicks desired user from chat"
     },
-    "viptoggle": {
-      "requiresPermission": true,
-      "acceptsParameters": false,
-      "sendsChatMessage": true,
-      "exec": function(data) {
-        ChatbotSpec.vipMode = !ChatbotSpec.vipMode;
-        sendMessage(ChatbotSpec.label + "VIP-Only-Mode is now " + (ChatbotSpec.vipMode === true ? "enabled" : "disabled") + ".");
-      }
-    },
     "admins": {
       "sendsChatMessage": true,
       "exec": function(data) {
+        var val = (data.parameters === undefined ? undefined : data.parameters[0]);
         var roster = Candy.Core.getRoom(candyChatroom).roster.items;
         var online = [];
-        sendMessage("Here's a list of my chat admins:");
         
         for (var user in roster) {
           online.push(roster[user].data.nick);
         }
         
-        for (var i = 0; i < ChatbotSpec.admins.length; i++) {
-          sendMessage(ChatbotSpec.admins[i] + " [" + (online.indexOf(ChatbotSpec.admins[i]) === -1 ? "Offline" : "Online") + "]");
+        if (val === undefined) {
+          sendMessage("Online Chat Admins:");
+          for (var i in ChatbotSpec.viewers) {
+            if (online.indexOf(i) !== -1 && ChatbotSpec.viewers[i].permissions.admin) {
+              sendMessage("@" + i);
+            }
+          }
+          sendMessage("Type \"" + ChatbotSpec.commandInitializer + "admins all \" to see a list of all admins.");
+        } else if (val === "all") {
+          sendMessage("My Chat Admins:");
+          for (var i in ChatbotSpec.viewers) {
+            if (ChatbotSpec.viewers[i].permissions.admin) {
+              sendMessage("[" + (online.indexOf(i) === -1 ? "Offline" : "Online") + "] @" + i);
+            }
+          }
         }
       },
       "desc": "Lists all the admins for this chat."
@@ -191,7 +206,7 @@ Chatbot.prototype.onCommand = function(msgData) {
         } 
       } else {
         if (ChatbotSpec.commands[command].requiresPermission) {
-          if (ChatbotSpec.admins.indexOf(msgData.name) !== -1) {
+          if (ChatbotSpec.viewers.hasOwnProperty(msgData.name) && ChatbotSpec.viewers[msgData.name].permissions.admin) {
             ChatbotSpec.commands[command].exec(msgData);
           } else {
             sendMessage(ChatbotSpec.label + "That's an admin-only command @" + msgData.name);
