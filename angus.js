@@ -204,6 +204,26 @@ window.ChatbotSpec = {
           sendMessage(ChatbotSpec.label + "Only owners can demote people!");
         }
       }
+    },
+    "info": {
+      "requriesParams": true,
+      "requiresPermission": false,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        var toSend = ".\n";
+        var user = data.parameters[0].replace("@", "").replace(/^me/gi, data.name);
+        
+        if (ChatbotSpec.viewers.hasOwnProperty(user)) {
+          toSend += "@" + user + " has the following permissions:\n";
+          for (var i in ChatbotSpec.viewers[user].permissions) {
+            toSend += "[" + i + "] " + (ChatbotSpec.viewers[user].permissions[i] === true ? "Yes." : "No.") + "\n";
+          }
+        } else {
+          toSend += "Unknown user \"" + user + "\"!";
+        }
+        
+        sendMessage(toSend);
+      }
     }
   }
 };
