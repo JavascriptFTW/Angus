@@ -219,7 +219,7 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
         break;
     }
   } catch (err) {
-    sendMessage(ChatbotSpec.label + "Oh No! Something 'sploded! :fear:");
+    console.warn("Oh No! Something 'sploded.");
   }
 });
 
