@@ -49,7 +49,11 @@ window.ChatbotSpec = {
             "moderator": false,
             "vip": false
           },
-          "online": true
+          "online": true,
+          "ban": {
+            "isBanned": false,
+            "reason": ""
+          }
         };
           
         localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
@@ -224,6 +228,60 @@ window.ChatbotSpec = {
         
         sendMessage(toSend);
       }
+    },
+    "ban": {
+      "requiresParams": true,
+      "requiresPermission": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0].replace("@", "");
+        data.parameters.shift();
+        
+        data.reason = (data.parameters.join(" ") || "No reason provided.");
+        data.reason += " | To appeal this ban, please send GigabyteGiant a message at https://www.livecoding.tv/{user}/settings/messages/?message=GigabyteGiant".replace("{user}", data.who);
+        
+        if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
+          if (!ChatbotSpec.viewers[data.who].permissions.admin) {
+            Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+            ChatbotSpec.viewers[data.who].ban = {
+              isBanned: true,
+              reason: data.reason
+            };
+          } else {
+            if (ChatbotSpec.viewers[data.name].permissions.owner) {
+              Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
+              ChatbotSpec.viewers[data.who].ban = {
+                isBanned: true,
+                reason: data.reason
+              };
+            } else {
+              sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin.");
+            }
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "I don't know who @" + data.who + " is.");
+        }
+      }
+    },
+    "pardon": {
+      "requiresParams": true,
+      "requiresPermission": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0].replace("@", "");
+        
+        if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
+          if (ChatbotSpec.viewers[data.who].ban !== undefined && ChatbotSpec.viewers[data.who].ban.isBanned) {
+            ChatbotSpec.viewers[data.who].ban.isBanned = false;
+            ChatbotSpec.viewers[data.who].ban.reason = "";
+            sendMessage(ChatbotSpec.label + "@" + data.who + " unbanned by " + data.name + ".");
+          } else {
+            sendMessage(ChatbotSpec.label + "@" + data.who + " is not currently banned.");
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "I don't know who @" + data.who + " is.");
+        }
+      }
     }
   }
 };
@@ -237,13 +295,17 @@ window.Chatbot = function(spec) {
 
 Chatbot.prototype.onViewerJoin = function(evtInfo) {
   if (this.knownUsers.indexOf(evtInfo.name) === -1) {
-    this.knownUsers.push(evtInfo.name);
-    if (this.spec.events.viewerJoin === undefined) {
-      return (function(data) {
-        console.log(data.name + " joined!");
-      })(evtInfo);
+    if (ChatbotSpec.viewers[evtInfo.name].ban === undefined || !ChatbotSpec.viewers[evtInfo.name].ban.isBanned) {
+      this.knownUsers.push(evtInfo.name);
+      if (this.spec.events.viewerJoin === undefined) {
+        return (function(data) {
+          console.log(data.name + " joined!");
+        })(evtInfo);
+      } else {
+        return this.spec.events.viewerJoin(evtInfo);
+      }
     } else {
-      return this.spec.events.viewerJoin(evtInfo);
+      ChatbotSpec.commands.kick.exec({ parameters: [ evtInfo.name, ChatbotSpec.viewers[evtInfo.name].ban.reason ], name: "GigabyteGiant" });
     }
   }
 };
@@ -256,6 +318,9 @@ Chatbot.prototype.onViewerLeave = function(evtInfo) {
   } else {
     return this.spec.events.viewerLeave(evtInfo);
   }
+};
+Chatbot.prototype.onViewerKick = function(evtInfo) {
+  this.knownUsers.splice(this.knownUsers.indexOf(evtInfo.name), 1);
 };
 Chatbot.prototype.looksLikeCommand = function(msgData) {
   return msgData.message[0] === ChatbotSpec.commandInitializer;
@@ -272,7 +337,7 @@ Chatbot.prototype.onCommand = function(msgData) {
   if (parameters.length > 0) {
     msgData.parameters = parameters;
   }
-  
+
   if (ChatbotSpec.commands[command] === undefined) {
     sendMessage(ChatbotSpec.label + "\"" + command + "\" is not a valid command @" + msgData.name + "!");
   } else {
@@ -318,6 +383,9 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
         break;
       case "leave":
         chatbot.onViewerLeave({ name: who });
+        break;
+      case "kick":
+        chatbot.onViewerKickk({ name: who });
         break;
     }
   } catch (err) {
