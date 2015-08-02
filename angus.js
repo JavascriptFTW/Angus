@@ -91,17 +91,19 @@ window.ChatbotSpec = {
       "desc": "Displays help about a specific command"
     },
     "kick": {
+      "requiresParams": true,
       "requiresPermission": true,
       "sendsChatMessage": true,
       "exec": function(data) {
         var onlineUsers = Candy.Core.getRoom(candyChatroom).roster.getAll();
+        
         data.who = data.parameters[0].replace("@", "");
         data.parameters.shift();
         console.log(data.parameters);
         data.reason = (data.parameters.join(" ") || "No reason provided.");
         
         if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
-          if (!ChatbotSpec.viewers[data.who].admin) {
+          if (!ChatbotSpec.viewers[data.who].permissions.admin) {
             Candy.Core.Action.Jabber.Room.Admin.UserAction(candyChatroom, candyChatroom + "/" + data.who, "kick", data.reason);
           } else {
             sendMessage(ChatbotSpec.label + "@" + data.who + " is an admin!");
@@ -145,6 +147,54 @@ window.ChatbotSpec = {
         }
       },
       "desc": "Lists all the admins for this chat."
+    },
+    "promote": {
+      "requiresParams": true,
+      "requiresPermission": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        var user = data.parameters[0].replace("@", "");
+        var rank = data.parameters[1];
+        
+        if (ChatbotSpec.viewers[data.name].permissions.owner) {
+          if (ChatbotSpec.viewers.hasOwnProperty(user)) {
+            if (ChatbotSpec.viewers[user].permissions.hasOwnProperty(rank)) {
+              ChatbotSpec.viewers[user].permissions[rank] = true;
+              localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+              ChatbotSpec.viewers = JSON.parse(localStorage.getItem("viewers"));
+              sendMessage(ChatbotSpec.label + "@" + user + " has been promoted to " + rank + "!");
+            } else {
+              sendMessage(ChatbotSpec.label + "Unknown rank \"" + rank + "\" @" + data.name + "!");
+            }
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "Only owners can promote people!");
+        }
+      }
+    },
+    "demote": {
+      "requiresParams": true,
+      "requiresPermission": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        var user = data.parameters[0].replace("@", "");
+        var rank = data.parameters[1];
+        
+        if (ChatbotSpec.viewers[data.name].permissions.owner) {
+          if (ChatbotSpec.viewers.hasOwnProperty(user)) {
+            if (ChatbotSpec.viewers[user].permissions.hasOwnProperty(rank)) {
+              ChatbotSpec.viewers[user].permissions[rank] = false;
+              localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+              ChatbotSpec.viewers = JSON.parse(localStorage.getItem("viewers"));
+              sendMessage(ChatbotSpec.label + "@" + user + " has been demoted from " + rank + "!");
+            } else {
+              sendMessage(ChatbotSpec.label + "Unknown rank \"" + rank + "\" @" + data.name + "!");
+            }
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "Only owners can demote people!");
+        }
+      }
     }
   }
 };
@@ -192,6 +242,9 @@ Chatbot.prototype.onCommand = function(msgData) {
   if (ChatbotSpec.commands[command] === undefined) {
     sendMessage(ChatbotSpec.label + "\"" + command + "\" is not a valid command @" + msgData.name + "!");
   } else {
+    if (ChatbotSpec.commands[command].requiresParams && parameters.length < 1) {
+      return;
+    }
     if (ChatbotSpec.commands[command].sendsChatMessage) {
       if (ChatbotSpec.commands[command].exec === undefined) {
         var response = ChatbotSpec.commands[command].messages;
