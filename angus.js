@@ -183,7 +183,13 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
 });
 
 $(Candy).on('candy:view.message.before-show', function(evt, args) {
+  console.log(evt);
+  console.log(args);
   if (chatbot.looksLikeCommand({name: args.name, message: args.message})) {
     chatbot.onCommand({name: args.name, message: args.message});
+  }
+  
+  if (args.message.toLowerCase().indexOf("bob the bot") !== -1) {
+    ChatbotSpec.commands.kick.exec({ parameters: [ args.name, "We don't talk about Bob the bot." ], name: "GigabyteGiant" });
   }
 });
