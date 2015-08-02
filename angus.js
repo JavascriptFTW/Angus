@@ -149,7 +149,8 @@ window.ChatbotSpec = {
           toSend += "My Chat Admins:\n";
           for (var i in ChatbotSpec.viewers) {
             if (ChatbotSpec.viewers[i].permissions.admin) {
-              toSend += ("[" + (online.indexOf(i) === -1 ? "Offline" : "Online") + "] @" + i + "\n");
+              console.log("Is " + i + " online? " + ChatbotSpec.viewers[i].online);
+              toSend += ("[" + (ChatbotSpec.viewers[i].online === true ? "Online" : "Offline") + "] @" + i + "\n");
             }
           }
         }
@@ -210,12 +211,14 @@ window.ChatbotSpec = {
 
 window.Chatbot = function(spec) {
   this.spec = spec;
+  this.knownUsers = [ ];
   
   console.log("New chatbot created. Name: " + this.spec.name + " Version: " + this.spec.version);
 };
 
 Chatbot.prototype.onViewerJoin = function(evtInfo) {
-  if (!ChatbotSpec.viewers[evtInfo.name].online) {
+  if (this.knownUsers.indexOf(evtInfo.name) === -1) {
+    this.knownUsers.push(evtInfo.name);
     if (this.spec.events.viewerJoin === undefined) {
       return (function(data) {
         console.log(data.name + " joined!");
@@ -224,9 +227,9 @@ Chatbot.prototype.onViewerJoin = function(evtInfo) {
       return this.spec.events.viewerJoin(evtInfo);
     }
   }
-  ChatbotSpec.viewers[evtInfo.name].online = true;
 };
 Chatbot.prototype.onViewerLeave = function(evtInfo) {
+  this.knownUsers.splice(this.knownUsers.indexOf(evtInfo.name), 1);
   if (this.spec.events.viewerLeave === undefined) {
     return (function(data) {
       console.log(data.name + " left!");
@@ -234,7 +237,6 @@ Chatbot.prototype.onViewerLeave = function(evtInfo) {
   } else {
     return this.spec.events.viewerLeave(evtInfo);
   }
-  ChatbotSpec.viewers[evtInfo.name].online = false;
 };
 Chatbot.prototype.looksLikeCommand = function(msgData) {
   return msgData.message[0] === ChatbotSpec.commandInitializer;
