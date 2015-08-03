@@ -49,6 +49,9 @@ window.ChatbotSpec = {
         ChatbotSpec.viewers = JSON.parse(localStorage.getItem("viewers"));
       }
       sendMessage(ChatbotSpec.label + "Welcome to the channel @" + data.name);
+    },
+    "viewerFollow": function(data) {
+      sendMessage(ChatbotSpec.label + "@" + data.title + " followed! Welcome to the team!! ;D");
     }
   },
   commands: {
@@ -344,6 +347,11 @@ Chatbot.prototype.onViewerLeave = function(evtInfo) {
 Chatbot.prototype.onViewerKick = function(evtInfo) {
   this.knownUsers.splice(this.knownUsers.indexOf(evtInfo.name), 1);
 };
+Chatbot.prototype.onViewerFollow = function(evtInfo) {
+  if (this.spec.events.viewerFollow) {
+    return this.spec.events.viewerFollow(evtInfo);
+  }
+};
 Chatbot.prototype.looksLikeCommand = function(msgData) {
   return msgData.message[0] === ChatbotSpec.commandInitializer;
 };
@@ -395,6 +403,14 @@ Chatbot.prototype.onCommand = function(msgData) {
 
 var chatbot = new Chatbot(ChatbotSpec);
 
+/*
+ * LCTV Follow Event Dispatcher generously provided by @kristian (https://www.livecoding.tv/kristian/)
+ * GitHub: https://github.com/kristianheljas/LCTVFollowEventDispatcher
+ */
+$.getScript("https://cdn.rawgit.com/kristianheljas/LCTVFollowEventDispatcher/e2ff64af52d373205377cf59c7f74ccf7017a7c9/LCTVFollowEventDispatcher.js", function() {
+  console.log("LCTVFollowEventDispatcher loaded!");
+});
+
 /* Upon presence update */
 $(Candy).on("candy:core.presence.room", function(evt, args) {
   try {
@@ -433,4 +449,8 @@ $(Candy).on('candy:view.message.before-show', function(evt, args) {
   if (bobCheckMsg.indexOf("bob the bot") !== -1) {
     ChatbotSpec.commands.kick.exec({ parameters: [ args.name, "We don't talk about Bob the bot." ], name: "GigabyteGiant" });
   }
+});
+
+$(window).on("LCTV:follow", function(evt, index, followerObj) {
+  chatbot.onViewerFollow(followerObj);
 });
