@@ -23,6 +23,9 @@ window.ChatbotSpec = {
       "greeting": "I have arrived."
     }
   })),
+  misc: {
+    userJoinTimes: {}
+  },
   events: {
     "viewerLeave": function(data) {
       if (ChatbotSpec.viewers.hasOwnProperty(data.name)) {
@@ -41,21 +44,7 @@ window.ChatbotSpec = {
           sendMessage(ChatbotSpec.label + parsedGreeting);
           return;
         }
-      } else {
-        ChatbotSpec.viewers[data.name] = {
-          "permissions": {
-            "owner": false,
-            "admin": false,
-            "moderator": false,
-            "vip": false
-          },
-          "online": true,
-          "ban": {
-            "isBanned": false,
-            "reason": ""
-          }
-        };
-          
+      } else {          
         localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
         ChatbotSpec.viewers = JSON.parse(localStorage.getItem("viewers"));
       }
@@ -218,9 +207,17 @@ window.ChatbotSpec = {
         var user = data.parameters[0].replace("@", "").replace(/^me/gi, data.name);
         
         if (ChatbotSpec.viewers.hasOwnProperty(user)) {
-          toSend += "@" + user + " has the following permissions:\n";
+          var totalTime;
+          if (ChatbotSpec.viewers[user].stats.first_join !== null) {
+            totalTime = (((new Date()).getTime()) - ChatbotSpec.viewers[user].stats.first_join);
+          } else {
+            totalTime = 0;
+          }
+          toSend += "@" + user + "'s statistics:\n";
+          toSend += "‌‌ - Total time in stream: " + totalTime + " milliseconds\n";
+          toSend += "‌‌ - Permissions:\n";
           for (var i in ChatbotSpec.viewers[user].permissions) {
-            toSend += "[" + i + "] " + (ChatbotSpec.viewers[user].permissions[i] === true ? "Yes." : "No.") + "\n";
+            toSend += "‌‌ ‌‌ • [" + i + "] " + (ChatbotSpec.viewers[user].permissions[i] === true ? "Yes." : "No.") + "\n";
           }
         } else {
           toSend += "Unknown user \"" + user + "\"!";
@@ -294,7 +291,32 @@ window.Chatbot = function(spec) {
 };
 
 Chatbot.prototype.onViewerJoin = function(evtInfo) {
+  if (!ChatbotSpec.viewers.hasOwnProperty(evtInfo.name)) {
+    ChatbotSpec.viewers[evtInfo.name] = {
+      "permissions": {
+        "owner": false,
+        "admin": false,
+        "moderator": false,
+        "vip": false
+      },
+      "ban": {
+        "isBanned": false,
+        "reason": ""
+      },
+      "stats": {
+        "first_join": (new Date()).getTime()
+      }
+    };
+    localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+  } else {
+    if (ChatbotSpec.viewers[evtInfo.name].stats.first_join === null) {
+      ChatbotSpec.viewers[evtInfo.name].stats.first_join = (new Date()).getTime();
+    }
+  }
   if (this.knownUsers.indexOf(evtInfo.name) === -1) {
+    if (!ChatbotSpec.misc.userJoinTimes.hasOwnProperty(evtInfo.name)) {
+      ChatbotSpec.misc.userJoinTimes[evtInfo.name] = (new Date()).getTime();
+    }
     if (ChatbotSpec.viewers[evtInfo.name].ban === undefined || !ChatbotSpec.viewers[evtInfo.name].ban.isBanned) {
       this.knownUsers.push(evtInfo.name);
       if (this.spec.events.viewerJoin === undefined) {
@@ -390,6 +412,7 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
     }
   } catch (err) {
     console.warn("Oh No! Something 'sploded.");
+    console.log(err);
   }
 });
 

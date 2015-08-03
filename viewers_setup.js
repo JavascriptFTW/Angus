@@ -6,8 +6,14 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
+    "ban": {
+      "isBanned": false,
+      "reason": ""
+    },
+    "stats": {
+      "first_join": null
+    },
     "greeting": "I have arrived.",
-    "online": false
   },
   "Lokio27": {
     "permissions": {
@@ -16,9 +22,15 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
+    "ban": {
+      "isBanned": false,
+      "reason": ""
+    },
+    "stats": {
+      "first_join": null
+    },
     "greeting": "<Sp00k>",
-    "farewell": "</Sp00k>",
-    "online": false
+    "farewell": "</Sp00k>"
   },
   "drmjg": {
     "permissions": {
@@ -27,9 +39,15 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
+    "ban": {
+      "isBanned": false,
+      "reason": ""
+    },
+    "stats": {
+      "first_join": null
+    },
     "greeting": "An admin is upon us!",
-    "farewell": "DUN BAN ME {username}!",
-    "online": false
+    "farewell": "DUN BAN ME {username}!"
   },
   "kristian": {
     "permissions": {
@@ -38,8 +56,14 @@ var viewerPerms = {
       "moderator": true,
       "vip": true
     },
-    "greeting": "Get back to work {username} :D",
-    "online": false
+    "ban": {
+      "isBanned": false,
+      "reason": ""
+    },
+    "stats": {
+      "first_join": null
+    },
+    "greeting": "Get back to work {username} :D"
   }
 };
 
