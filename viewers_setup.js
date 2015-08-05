@@ -10,7 +10,7 @@ var viewerPerms = {
       "isBanned": false,
       "reason": ""
     },
-    "stats": {
+    "stats": { 
       "first_join": null
     },
     "greeting": "I have arrived.",

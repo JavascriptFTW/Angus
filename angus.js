@@ -64,13 +64,14 @@ window.ChatbotSpec = {
         sendMessage("\"" + ChatbotSpec.name + "\" Version " + ChatbotSpec.version + " by " + ChatbotSpec.author);
         sendMessage("Find \"" + ChatbotSpec.name + "\" on GitHub: https://github.com/Gigabyte-Giant/Angus");
       },
-      "desc": "Displays information about the bot."
+      "desc": "Displays information about the bot.",
+      "usage": "<command>"
     },
     "help": {
       "sendsChatMessage": true,
       "exec": function(data) {
-        var toSend = ".\n";
         if (data.parameters) {
+          var toSend = "";
           var cmd = data.parameters[0].replace(ChatbotSpec.commandInitializer, "");
           
           if (ChatbotSpec.commands[cmd] === undefined) {
@@ -87,7 +88,8 @@ window.ChatbotSpec = {
         }
         sendMessage(toSend);
       },
-      "desc": "Displays help about a specific command"
+      "desc": "Displays help about a specific command",
+      "usage": "<command> <cmd>"
     },
     "kick": {
       "requiresParams": true,
@@ -119,7 +121,8 @@ window.ChatbotSpec = {
           }
         }
       },
-      "desc": "Kicks desired user from chat"
+      "desc": "Kicks desired user from chat",
+      "usage": "<command> <user> <reason>"
     },
     "admins": {
       "sendsChatMessage": true,
@@ -151,7 +154,8 @@ window.ChatbotSpec = {
         }
         sendMessage(toSend);
       },
-      "desc": "Lists all the admins for this chat."
+      "desc": "Lists all the admins for this chat.",
+      "usage": "<command> *all"
     },
     "promote": {
       "requiresParams": true,
@@ -175,7 +179,9 @@ window.ChatbotSpec = {
         } else {
           sendMessage(ChatbotSpec.label + "Only owners can promote people!");
         }
-      }
+      },
+      "desc": "Promotes desired used to desired rank.",
+      "usage": "<command> <user> <rank>"
     },
     "demote": {
       "requiresParams": true,
@@ -199,15 +205,17 @@ window.ChatbotSpec = {
         } else {
           sendMessage(ChatbotSpec.label + "Only owners can demote people!");
         }
-      }
+      },
+      "desc": "Removes desired permission from desired user.",
+      "usage": "<command> <user> <rank>"
     },
     "info": {
-      "requriesParams": true,
+      "requiresParams": true,
       "requiresPermission": false,
       "sendsChatMessage": true,
       "exec": function(data) {
         var toSend = ".\n";
-        var user = data.parameters[0].replace("@", "").replace(/^me/gi, data.name);
+        var user = data.parameters[0] === undefined ? data.name : data.parameters[0].replace("@", "").replace(/^me/gi, data.name);
         
         if (ChatbotSpec.viewers.hasOwnProperty(user)) {
           var totalTime;
@@ -227,7 +235,9 @@ window.ChatbotSpec = {
         }
         
         sendMessage(toSend);
-      }
+      },
+      "desc": "Displays statistics for a certain user.",
+      "usage": "<command> <user>"
     },
     "ban": {
       "requiresParams": true,
@@ -261,7 +271,9 @@ window.ChatbotSpec = {
         } else {
           sendMessage(ChatbotSpec.label + "I don't know who @" + data.who + " is.");
         }
-      }
+      },
+      "desc": "Bans user from chat, until pardoned by admin.",
+      "usage": "<command> <user> <reason>"
     },
     "pardon": {
       "requiresParams": true,
@@ -281,7 +293,23 @@ window.ChatbotSpec = {
         } else {
           sendMessage(ChatbotSpec.label + "I don't know who @" + data.who + " is.");
         }
-      }
+      },
+      "desc": "Unbans user from chat.",
+      "usage": "<command> <user>"
+    },
+    "report": {
+      "requiresParams": true,
+      "requiresPermission": false,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0].replace("@", "");
+        data.parameters.shift();
+        data.reason = (data.parameters.join(" ") || "No reason provided.");
+        
+        new Notification(data.who + " was reported!", { body: data.reason });
+      },
+      "desc": "Publicly report people for doing bad things.",
+      "usage": "<command> <user> <reason>"
     }
   }
 };
@@ -291,6 +319,7 @@ window.Chatbot = function(spec) {
   this.knownUsers = [ ];
   
   console.log("New chatbot created. Name: " + this.spec.name + " Version: " + this.spec.version);
+  Notification.requestPermission();
 };
 
 Chatbot.prototype.onViewerJoin = function(evtInfo) {
@@ -363,15 +392,17 @@ Chatbot.prototype.onCommand = function(msgData) {
   for (var i = 1; i < msgData.message.split(" ").length; i++) {
     parameters.push(msgData.message.split(" ")[i]);
   }
-  
+
   if (parameters.length > 0) {
     msgData.parameters = parameters;
   }
-
+  
   if (ChatbotSpec.commands[command] === undefined) {
     sendMessage(ChatbotSpec.label + "\"" + command + "\" is not a valid command @" + msgData.name + "!");
   } else {
     if (ChatbotSpec.commands[command].requiresParams && parameters.length < 1) {
+      sendMessage(ChatbotSpec.label + "Command usage:\n");
+      sendMessage(ChatbotSpec.commands[command].usage.replace("<command>", ChatbotSpec.label + "\"" + ChatbotSpec.commandInitializer + command) + "\"");
       return;
     }
     if (ChatbotSpec.commands[command].sendsChatMessage) {
