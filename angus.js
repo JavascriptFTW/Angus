@@ -71,7 +71,6 @@ window.ChatbotSpec = {
       "sendsChatMessage": true,
       "exec": function(data) {
         if (data.parameters) {
-          var toSend = "";
           var cmd = data.parameters[0].replace(ChatbotSpec.commandInitializer, "");
           
           if (ChatbotSpec.commands[cmd] === undefined) {
@@ -80,13 +79,14 @@ window.ChatbotSpec = {
             sendMessage(ChatbotSpec.label + ChatbotSpec.commandInitializer + cmd + ": " + (ChatbotSpec.commands[cmd].desc || "No information provided."));
           }
         } else {
+          var toSend = ".\n";
           toSend += ChatbotSpec.label + "@" + data.name + " Here is a list of the commands:\n";
           for (var i in ChatbotSpec.commands) {
             toSend += ChatbotSpec.commandInitializer + i + "\n";
           }
           toSend += "Type \"" + ChatbotSpec.commandInitializer + "help <command>\" for more information about a specific command.";
+          sendMessage(toSend);
         }
-        sendMessage(toSend);
       },
       "desc": "Displays help about a specific command",
       "usage": "<command> <cmd>"
@@ -310,6 +310,46 @@ window.ChatbotSpec = {
       },
       "desc": "Publicly report people for doing bad things.",
       "usage": "<command> <user> <reason>"
+    },
+    "set_greeting": {
+      "requiresParams": true,
+      "requiresPermissions": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0].replace("@", "");
+        data.parameters.shift();
+        data.newMsg = (data.parameters.join(" ") || "");
+        
+        if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
+          if (ChatbotSpec.viewers[data.name].permissions.owner) {
+            ChatbotSpec.viewers[data.who].greeting = data.newMsg;
+            localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+            sendMessage(ChatbotSpec.label + "@" + data.who + "'s greeting message was set to \"" + data.newMsg + "\"!");
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "Well this is awkward, I haven't met @" + data.who + ".");
+        }
+      }
+    },
+    "set_farewell": {
+      "requiresParams": true,
+      "requiresPermissions": true,
+      "sendsChatMessage": true,
+      "exec": function(data) {
+        data.who = data.parameters[0].replace("@", "");
+        data.parameters.shift();
+        data.newMsg = (data.parameters.join(" ") || "");
+        
+        if (ChatbotSpec.viewers.hasOwnProperty(data.who)) {
+          if (ChatbotSpec.viewers[data.name].permissions.owner) {
+            ChatbotSpec.viewers[data.who].farewell = data.newMsg;
+            localStorage.setItem("viewers", JSON.stringify(ChatbotSpec.viewers));
+            sendMessage(ChatbotSpec.label + "@" + data.who + "'s farewell message was set to \"" + data.newMsg + "\"!");
+          }
+        } else {
+          sendMessage(ChatbotSpec.label + "Well this is awkward, I haven't met @" + data.who + ".");
+        }
+      }
     }
   }
 };
@@ -454,7 +494,7 @@ $(Candy).on("candy:core.presence.room", function(evt, args) {
         chatbot.onViewerLeave({ name: who });
         break;
       case "kick":
-        chatbot.onViewerKickk({ name: who });
+        chatbot.onViewerKick({ name: who });
         break;
     }
   } catch (err) {
@@ -475,10 +515,6 @@ $(Candy).on('candy:view.message.before-show', function(evt, args) {
     if (ChatbotSpec.vips.indexOf(args.name) === -1) {
       args.message = "-";
     }
-  }
-  var bobCheckMsg = args.message.toLowerCase();
-  if (bobCheckMsg.indexOf("bob the bot") !== -1) {
-    ChatbotSpec.commands.kick.exec({ parameters: [ args.name, "We don't talk about Bob the bot." ], name: "GigabyteGiant" });
   }
 });
 
